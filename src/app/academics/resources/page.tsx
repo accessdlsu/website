@@ -50,8 +50,8 @@ interface CourseGroup {
   files: GroupedFile[];
 }
 
-const CURRENT_ACADEMIC_YEAR_TAG = '25-26';
-const PREVIOUS_ACADEMIC_YEAR_TAG = '24-25';
+const CURRENT_ACADEMIC_YEAR_TAG = '26-27';
+const PREVIOUS_ACADEMIC_YEAR_TAG = '25-26';
 const FILE_FORMAT_REGEX = /^([^_]+)_(\d{2})-(\d{2})-T(\d)(?:_|$)/;
 
 export default function ResourcesPage() {
@@ -468,7 +468,7 @@ export default function ResourcesPage() {
                     This Academic Year
                   </h2>
                   <p className="text-sm text-zinc-700 dark:text-zinc-400" style={{ fontFamily: 'var(--font-manrope)' }}>
-                    Reviewer files tagged with A.Y. 25-26.
+                    Reviewer files tagged with {formatAcademicYearTag(CURRENT_ACADEMIC_YEAR_TAG)}.
                   </p>
                 </div>
                 {groupedReviewersThisYear.size > 0 ? (
@@ -484,7 +484,7 @@ export default function ResourcesPage() {
                     Previous Academic Years
                   </h2>
                   <p className="text-sm text-zinc-700 dark:text-zinc-400" style={{ fontFamily: 'var(--font-manrope)' }}>
-                    Reviewer files tagged with A.Y. 24-25.
+                    Reviewer files tagged with {formatAcademicYearTag(PREVIOUS_ACADEMIC_YEAR_TAG)}.
                   </p>
                 </div>
                 {groupedReviewersPreviousYears.size > 0 ? (
