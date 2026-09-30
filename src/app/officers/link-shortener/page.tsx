@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDB } from '@/lib/db';
 import LinkShortenerClient from './LinkShortenerClient';
 
 export default async function LinkShortenerPage() {
@@ -10,8 +10,7 @@ export default async function LinkShortenerPage() {
     redirect('/');
   }
 
-  const { env } = await getCloudflareContext();
-  const { DB } = env;
+  const DB = await getDB();
 
   // Check if the user is an officer
   const result = await DB.prepare(

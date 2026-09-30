@@ -28,6 +28,10 @@ Thumbs.db
 ._*
 *.pem
 
+# local code intelligence / analysis caches
+.codegraph/
+.fallow/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -48,3 +52,6 @@ wrangler.toml
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cloudflare generated types (npm run cf-typegen)
+/env.d.ts

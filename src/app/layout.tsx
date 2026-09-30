@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Manrope } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
@@ -20,6 +20,14 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "ACCESS DLSU",
   description: "ACCESS is a professional organization of Computer Engineering students who strive to be Lasallian achievers. We provide a platform for academic and professional growth, offering a diverse range of activities to refine engineering skills.",
+};
+
+// viewport-fit=cover so safe-area insets (notches, fold hinges) can be
+// honoured; used with the foldable rules at the end of globals.css.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

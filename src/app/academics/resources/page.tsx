@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { BookOpen, FileText, Video, Code, Lock, Download } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
@@ -50,8 +50,8 @@ interface CourseGroup {
   files: GroupedFile[];
 }
 
-const CURRENT_ACADEMIC_YEAR_TAG = '25-26';
-const PREVIOUS_ACADEMIC_YEAR_TAG = '24-25';
+const CURRENT_ACADEMIC_YEAR_TAG = '26-27';
+const PREVIOUS_ACADEMIC_YEAR_TAG = '25-26';
 const FILE_FORMAT_REGEX = /^([^_]+)_(\d{2})-(\d{2})-T(\d)(?:_|$)/;
 
 export default function ResourcesPage() {
@@ -64,33 +64,22 @@ export default function ResourcesPage() {
   const [resourcesError, setResourcesError] = useState<string | null>(null);
   const { notification, showNotification, hideNotification } = useNotification();
   const [showAuthWarning, setShowAuthWarning] = useState(true);
-  const [isAuthWarningFading, setIsAuthWarningFading] = useState(false);
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
-  const downloadRef = useRef<HTMLAnchorElement>(null);
 
   // Set user info cookie when logged in and fade out auth warning
   useEffect(() => {
-    // Mark that we've checked auth
-    if (!hasCheckedAuth) {
-      setHasCheckedAuth(true);
-    }
+    if (!session?.user || !showAuthWarning) return;
 
-    if (session?.user && showAuthWarning) {
-      // Start fade out animation
-      setIsAuthWarningFading(true);
-      
-      // Remove after animation completes
-      const timeout = setTimeout(() => {
-        setShowAuthWarning(false);
-      }, 500);
+    // Remove after fade animation completes
+    const timeout = setTimeout(() => {
+      setShowAuthWarning(false);
+    }, 500);
 
-      fetch('/api/set-user-info').catch(() => {
-        // Silently fail if cookie setting fails
-      });
+    fetch('/api/set-user-info').catch(() => {
+      // Silently fail if cookie setting fails
+    });
 
-      return () => clearTimeout(timeout);
-    }
-  }, [session, hasCheckedAuth, showAuthWarning]);
+    return () => clearTimeout(timeout);
+  }, [session, showAuthWarning]);
 
   useEffect(() => {
     (async () => {
@@ -120,10 +109,7 @@ export default function ResourcesPage() {
 
   // Animate loading progress
   useEffect(() => {
-    if (!loading) {
-      setLoadingProgress(0);
-      return;
-    }
+    if (!loading) return;
 
     const interval = setInterval(() => {
       setLoadingProgress(prev => {
@@ -289,7 +275,7 @@ export default function ResourcesPage() {
     fetch(`/api/resources/download?fileId=${encodeURIComponent(fileId)}`)
       .then(async res => {
         if (!res.ok) {
-          const data = await res.json();
+          const data = (await res.json()) as { error?: string };
           throw new Error(data.error || 'Download failed');
         }
         let filename = fileName;
@@ -304,12 +290,13 @@ export default function ResourcesPage() {
       })
       .then(data => {
         const blobUrl = URL.createObjectURL(data.blob);
-        if (downloadRef.current) {
-          downloadRef.current.href = blobUrl;
-          downloadRef.current.download = data.filename;
-          downloadRef.current.click();
-          URL.revokeObjectURL(blobUrl);
-        }
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = data.filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(blobUrl);
         showNotification('Download started', 'success');
       })
       .catch(error => {
@@ -463,7 +450,7 @@ export default function ResourcesPage() {
           <AuthWarning
             title="Sign in to access restricted resources"
             message="Some resources require DLSU authentication. Sign in with your @dlsu.edu.ph email to access all materials."
-            isFading={isAuthWarningFading}
+            isFading={!!session?.user}
           />
         )}
 
@@ -481,7 +468,7 @@ export default function ResourcesPage() {
                     This Academic Year
                   </h2>
                   <p className="text-sm text-zinc-700 dark:text-zinc-400" style={{ fontFamily: 'var(--font-manrope)' }}>
-                    Reviewer files tagged with A.Y. 25-26.
+                    Reviewer files tagged with {formatAcademicYearTag(CURRENT_ACADEMIC_YEAR_TAG)}.
                   </p>
                 </div>
                 {groupedReviewersThisYear.size > 0 ? (
@@ -497,7 +484,7 @@ export default function ResourcesPage() {
                     Previous Academic Years
                   </h2>
                   <p className="text-sm text-zinc-700 dark:text-zinc-400" style={{ fontFamily: 'var(--font-manrope)' }}>
-                    Reviewer files tagged with A.Y. 24-25.
+                    Reviewer files tagged with {formatAcademicYearTag(PREVIOUS_ACADEMIC_YEAR_TAG)}.
                   </p>
                 </div>
                 {groupedReviewersPreviousYears.size > 0 ? (
@@ -535,8 +522,6 @@ export default function ResourcesPage() {
             }
           />
         )}
-
-        <a ref={downloadRef} style={{ display: 'none' }} />
       </div>
     </div>
   );

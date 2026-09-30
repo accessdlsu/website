@@ -4,43 +4,50 @@
   "description": "The official website of ACCESS DLSU.",
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
+    "typecheck": "npm run cf-typegen && tsc --noEmit"
   },
   "dependencies": {
-    "framer-motion": "^12",
-    "lucide-react": "*",
-    "next": "^15",
-    "next-auth": "^5.0.0-beta",
+    "framer-motion": "^13.2.0",
+    "lucide-react": "^1.43.0",
+    "next": "^16.3.4",
+    "next-auth": "^5.0.0-beta.32",
     "pdf-lib": "^1.17",
-    "react": "^19",
-    "react-dom": "^19"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4",
-    "@eslint/eslintrc": "^3",
-    "@opennextjs/cloudflare": "^1",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "autoprefixer": "^10",
-    "baseline-browser-mapping": "^2.9.7",
-    "comment-json": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "^15",
-    "glob": "^11",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "wrangler": "^4.42.2"
+    "@cloudflare/workers-types": "^5.20260908.1",
+    "@opennextjs/cloudflare": "^1.20.6",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.4",
+    "glob": "^13.0.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.129.1"
   },
   "browserslist": [
     "defaults",
     "Safari >= 14"
-  ]
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "allowScripts": {
+    "@tailwindcss/oxide": true,
+    "sharp": true,
+    "unrs-resolver": true,
+    "workerd": true,
+    "esbuild": true
+  }
 }

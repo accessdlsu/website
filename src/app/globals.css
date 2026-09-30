@@ -102,10 +102,12 @@ body {
     top: 2rem; /* add a bit more top spacing */
 }
 
-/* Header Wrapper to center everything together */
+/* Header Wrapper to center everything together. Top matches the mobile
+   corner offset (1rem) so the corner pills' breakpoint morph is a
+   straight horizontal glide. */
 .header-wrapper {
     position: fixed;
-    top: 2rem;
+    top: 1rem;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -138,9 +140,13 @@ body {
     overflow: hidden;
 }
 
-/* Unified Navbar container styles */
-.navbar {
-    --tfc-dark-mode-text-primary: #e4e4e7;
+    /* Unified Navbar container styles */
+    .navbar {
+        /* Floor at the compressed pill width so expanding starts from the
+           compressed size instead of collapsing to zero first (the trigger
+           is position:absolute and does not size the pill). */
+        min-width: 180px;
+        --tfc-dark-mode-text-primary: #e4e4e7;
     --tfc-dark-mode-text-secondary: #71717a;
     --tfc-dark-mode-bg-primary: #27272a;
     --tfc-dark-mode-bg-primary-2: #3f3f46;
@@ -162,10 +168,21 @@ body {
     z-index: 10;
     background: rgba(28, 28, 28, 0.35); /* More transparent like dropdown */
     border-radius: 50px;
-    overflow: visible; /* Changed from hidden to allow dropdowns */
-    transition:
-        width 0.4s ease-in-out;
+    /* dropdown menus render outside the navbar; children clip themselves,
+       and vertical visibility keeps the glass drop-shadows uncut */
+    overflow: visible;
     opacity: 1;
+    pointer-events: all;
+    /* Desktop->mobile flip: the pill slides up and out (the mobile bottom
+       bar owns the bottom position below 1200px). Visibility flips only
+       after the slide here (hide side); showing flips immediately. */
+    transition:
+        opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0s,
+        /* Focus mode eases the 180px floor away/instead of snapping it
+           (content width itself follows the animated items per frame) */
+        min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: all;
     -webkit-backdrop-filter: blur(60px) saturate(200%) brightness(1.1); /* Match dropdown blur */
     backdrop-filter: blur(60px) saturate(200%) brightness(1.1); /* Match dropdown blur */
@@ -186,9 +203,8 @@ body {
         inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
-.navbar.navbar-compressed {
-    min-width: 180px; /* Ensure space for "Navigation Bar" label */
-}
+/* min-width floor lives on the base .navbar (see above) so the pill never
+   collapses to zero between states. */
 
 /* Add a subtle inner backdrop for extra 3D effect */
 .navbar::before {
@@ -217,8 +233,11 @@ body {
     /* transform: translateX(-50%) translateY(-200px) !important; -> Removed */
 }
 
-/* Navbar content container */
+/* Navbar content container - relative anchor for the absolutely centered
+   compressed trigger, so it fades in place instead of being pushed around
+   by the expanding links. */
 .navbar-content {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -231,29 +250,39 @@ body {
    Note: keep the trigger present in layout (no display:none) so it can animate smoothly.
    We use opacity/max-width/visibility/pointer-events to transition between states. */
 .navbar-trigger {
+    /* Absolutely centered: does not participate in the links' flex layout,
+       so expanding links can't push it sideways - it fades/clips in place. */
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     padding: 0 1rem;
-    flex-shrink: 0;
+    /* Match navbar item height so text descenders (g, y) are not
+       clipped by overflow: hidden while the box animates */
+    height: 48px;
 
-    /* Start visually hidden but animatable - avoid display:none */
+    /* Start visually hidden but animatable - avoid display:none.
+       Content clips in place (x-clipped + centered) so the trigger never
+       slides or scales while collapsing; y stays visible for shadows. */
+    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
     opacity: 0;
     max-width: 0;
     padding-left: 0;
     padding-right: 0;
-    transform: translateY(0) scale(0.98);
     visibility: hidden;
     pointer-events: none;
 
-    /* Smooth, slightly staggered transitions */
     transition:
-        opacity 0.28s ease-in-out,
-        max-width 0.36s ease-in-out,
-        padding 0.28s ease-in-out,
-        transform 0.28s ease-in-out,
-        visibility 0s linear 0.36s;
+        /* Expanding (trigger disappearing): fade out fast, no delay */
+        opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+        max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
     background: none;
     border: none;
@@ -266,30 +295,43 @@ body {
 .navbar-links {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.25rem; /* Reduced from 0.75rem for tighter spacing */
-    padding: 0 4px; /* Reduced from 10px for tighter edge spacing */
+    padding: 0 6px; /* Matches the pill's 6px top/bottom spacing */
 
-    /* Default full state */
+    /* Default full state. x clips the collapse animation; y stays visible
+       so item shadows aren't cut (clip+visible is a valid pair; hidden
+       would force y to auto and clip the glass shadows too).
+       Centered so clipping is symmetric: items expand/collapse from the
+       middle. Expanding: opacity slightly delayed so the fading-out
+       trigger hands over without an empty-looking pill. */
     opacity: 1;
     max-width: 1000px;
     overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
     transition:
-        opacity 0.28s ease-in-out,
-        max-width 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.12s,
+        max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        /* Focus mode collapses the inter-item gap with the items */
+        gap 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* When navbar is compressed (scrolled away from top) */
 /* Compressed state: reveal the trigger via animated properties, and collapse links */
 .navbar-compressed .navbar-trigger {
-    /* Reveal trigger smoothly */
+    /* Reveal trigger smoothly.
+       Compressing (trigger appearing): delay until the links have cleared,
+       so the pill never looks empty mid-transition. */
     opacity: 1;
     max-width: 220px;
     padding: 0 1rem;
-    transform: translateY(0) scale(1);
     visibility: visible;
     pointer-events: all;
-    /* Make visibility change immediate when becoming visible */
-    transition-delay: 0s;
+    transition:
+        opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.12s,
+        max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .navbar-compressed .navbar-links {
@@ -299,59 +341,36 @@ body {
     flex: 0 0 0 !important;
     padding: 0 !important;
     margin: 0 !important;
-    transform: scale(0.95);
     pointer-events: none; /* Disable interactions when compressed */
     visibility: hidden;
     transition:
-        opacity 0.28s ease-in-out,
-        max-width 0.36s ease-in-out,
-        transform 0.36s cubic-bezier(0.4, 0, 0.2, 1);
-    transition-delay: 0s;
+        /* Compressing (links disappearing): fade out fast, no delay */
+        opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+        max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.navbar-compressed .navbar-links > * {
-    opacity: 1;
-    transform: none;
-    transition: none;
-}
-
-/* Utility to suppress the compress transition when the navbar is being
-   revealed from a hidden state. This prevents the compressed->expanded
-   animation from playing and instead makes the compressed layout appear
-   instantly (useful when scrolling up to reveal the navbar). */
+/* Utility to suppress ALL nav transitions while the navbar is revealed
+   from a hidden state: the compressed pill (icon + label) must appear
+   fully-formed with no expanding animation. Suppression persists until
+   the navbar expands (the header removes the class then) — states still
+   come from the normal compressed/expanded rules, only transitions are
+   disabled. */
 .navbar-no-compress-transition .navbar-links,
 .navbar-no-compress-transition .navbar-links > *,
 .navbar-no-compress-transition .navbar-trigger,
-.navbar-no-compress-transition .navbar-label {
-    /* Remove transitions so the compressed state appears instantly */
+.navbar-no-compress-transition .navbar-label,
+/* The suppression class lives on the pill itself — its own
+   min-width/opacity/transform transitions must not animate either. */
+.navbar-no-compress-transition.navbar {
     transition: none !important;
-    transition-delay: 0s !important;
-
-    /* Ensure the visual state is immediately applied */
-    opacity: 1 !important;
-    max-width: none !important;
-    padding: initial !important;
-    visibility: visible !important;
-    pointer-events: all !important;
-}
-
-/* Instantly hide trigger and label when expanding */
-.navbar-no-compress-transition .navbar-trigger,
-.navbar-no-compress-transition .navbar-label {
-    transition: none !important;
-    opacity: 0 !important;
-    max-width: 0 !important;
-    padding: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
 }
 
 .navbar-label {
     opacity: 1;
     max-width: 200px;
     transition:
-        opacity 0.3s ease-in-out,
-        max-width 0.3s ease-in-out;
+        opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Navbar link styles */
@@ -377,6 +396,10 @@ body {
     height: 48px; /* Set explicit height for full vertical expansion */
     display: inline-flex;
     align-items: center;
+    /* Explicit ceiling so focus-mode collapse (max-width -> 0) actually
+       animates: transitioning from `none` snaps instantly. Items are
+       content-sized, so this never changes the expanded layout. */
+    max-width: 300px;
 }
 
 .navbar-dropdown {
@@ -389,7 +412,6 @@ body {
 .navbar-links a:first-child,
 .navbar-item:first-child {
     padding-left: 16px; /* Balanced with base padding */
-    margin-left: 2px;
 }
 
 /* Target the button inside the last dropdown */
@@ -534,7 +556,14 @@ body {
     font-weight: 600;
     text-decoration: none;
     border-radius: 20px; /* 2x increase from 10px to 20px */
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* box-shadow near-instant so the cursor-tracked light spill on
+       neighbouring items follows the pointer without lag; the visual
+       highlight (bg/border/color) keeps its smooth 0.2s */
+    transition:
+        background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.05s linear;
     white-space: nowrap;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9); /* Very strong shadow for contrast */
     background: rgba(255, 255, 255, 0.05);
@@ -578,17 +607,38 @@ body {
 }
 
 .navbar-dropdown-item:hover {
+    /* Highlight + glow — no lift/float on hover */
     background: rgba(255, 255, 255, 0.15); /* Brighter on hover */
     border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px); /* Move up slightly on hover */
     color: #ffffff;
-
-    /* Enhanced 3D effect on hover - stronger shadows for depth */
     box-shadow:
-        0 8px 28px rgba(0, 0, 0, 0.6),
-        /* Larger outer shadow for elevation */ 0 4px 14px rgba(0, 0, 0, 0.4),
-        /* Medium shadow */ inset 0 1px 0 rgba(255, 255, 255, 0.2),
-        /* Brighter top highlight */ inset 0 -1px 0 rgba(0, 0, 0, 0.25); /* Deeper bottom shadow */
+        0 0 18px rgba(255, 255, 255, 0.16),
+        0 4px 12px rgba(0, 0, 0, 0.4),
+        0 2px 6px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Real-life light spill: the hovered item's glow lands on the facing
+   edge of its immediate neighbours. Intensity follows the pointer —
+   the closer to the shared edge, the brighter (vars set by header.tsx
+   / ui/navbar on the open menu; default is the resting level). */
+.navbar-dropdown-item:hover + .navbar-dropdown-item {
+    box-shadow:
+        inset 12px 0 14px -12px rgba(255, 255, 255, var(--spill-next, 0.2)),
+        0 4px 12px rgba(0, 0, 0, 0.4),
+        0 2px 6px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+}
+
+.navbar-dropdown-item:has(+ .navbar-dropdown-item:hover) {
+    box-shadow:
+        inset -12px 0 14px -12px rgba(255, 255, 255, var(--spill-prev, 0.2)),
+        0 4px 12px rgba(0, 0, 0, 0.4),
+        0 2px 6px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.15);
 }
 
 .navbar-dropdown-item:hover svg {
@@ -625,10 +675,12 @@ body {
 .navbar-item,
 .navbar-dropdown {
     transition:
-        opacity 0s ease-in-out,
-        max-width 0.3s ease-in-out,
-        padding 0.3s ease-in-out,
-        margin 0.3s ease-in-out;
+        /* Expanding (focus mode leaving): items fade back in after the
+           row has started re-opening */
+        opacity 0.15s ease-in-out 0.12s,
+        max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        padding 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        margin 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .navbar-item-hidden {
@@ -638,17 +690,26 @@ body {
     margin: 0 !important;
     overflow: hidden !important;
     pointer-events: none !important;
-}
-
-/* Focus mode - navbar adjusts width */
-.navbar.navbar-focus-mode {
-    width: auto;
-    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Going hidden: fade out fast while the width collapses (the
+       transition on the element at change time is this rule's) */
+    transition:
+        opacity 0.15s ease-in-out,
+        max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        padding 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        margin 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* Remove gap between navbar links when dropdown is active (focus mode) */
 .navbar.navbar-focus-mode .navbar-links {
     gap: 0;
+}
+
+/* Focus mode sizes the pill to the single active item (it stays in-flow
+   and drives the width) — no dead space around short labels. The 180px
+   floor on the base .navbar stays for scroll-compress, where the
+   absolutely-positioned trigger does not size the pill. */
+.navbar.navbar-focus-mode:not(.navbar-compressed) {
+    min-width: 0;
 }
 
 /* Active dropdown highlighting */
@@ -972,6 +1033,7 @@ body {
     }
 
     .navbar,
+    .navbar-mobile,
     .logo-pill,
     .login-pill,
     .footer,
@@ -990,6 +1052,7 @@ body {
     }
 
     .navbar,
+    .navbar-mobile,
     .logo-pill,
     .login-pill,
     .footer,
@@ -1004,6 +1067,7 @@ body {
     }
 
     .navbar,
+    .navbar-mobile,
     .logo-pill,
     .login-pill,
     .footer {
@@ -1074,6 +1138,12 @@ body {
     .navbar-dropdown-trigger:hover,
     .footer-links a:hover {
         background: rgba(94, 148, 50, 0.08);
+    }
+
+    /* Profile popup footer in light mode */
+    .login-expanded-footer {
+        border-top-color: rgba(15, 23, 42, 0.1);
+        background: rgba(15, 23, 42, 0.03);
     }
 
     .resource-button {
@@ -1609,37 +1679,23 @@ body {
 }
 
 .login-expanded {
-    position: absolute;
-    top: calc(100% + 12px); /* Position below the pill with gap */
-    right: 0;
+    /* Portaled to <body>: every ancestor inside the header wrapper is
+       behind a transform, which forms a backdrop root and blinds the
+       popup's backdrop-filter. Fixed here instead, under the pill. */
+    position: fixed;
+    top: calc(1rem + 72px); /* pill top 1rem + 60px height + 12px gap */
+    right: 1rem;
     width: 360px;
-    height: auto;
-    max-height: 500px;
-    opacity: 0;
-    pointer-events: none;
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
-    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
-    z-index: 100; /* Above the ::before element */
-    transform: translateY(-8px);
-}
-
-.login-pill.expanded .login-expanded {
-    opacity: 1;
-    pointer-events: all;
-    transform: translateY(0);
+    z-index: 1000; /* Above the header wrapper (z-50) and bar (z-60) */
 }
 
 .login-expanded-content {
     padding: 1.5rem;
     width: 100%;
-    opacity: 1;
-    transform: none;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    background: rgba(28, 28, 28, 0.95); /* Solid background for popup */
+    background: rgba(28, 28, 28, 0.6); /* Translucent so the blur reads, like the nav dropdowns */
     border-radius: 20px;
     border: 1.5px solid rgba(255, 255, 255, 0.25);
     box-shadow:
@@ -1649,14 +1705,19 @@ body {
         inset 0 -1px 0 rgba(0, 0, 0, 0.2);
     -webkit-backdrop-filter: blur(60px) saturate(200%) brightness(1.1);
     backdrop-filter: blur(60px) saturate(200%) brightness(1.1);
+    animation: loginPopupIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Remove the old expanded content styles since we no longer need the delayed animation */
-.login-pill.expanded .login-expanded-content {
-    opacity: 1;
-    transform: none;
+@keyframes loginPopupIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
-
 
 .login-header {
     display: flex;
@@ -1718,13 +1779,106 @@ body {
 }
 
 .signout-button {
-    background: rgba(239, 68, 68, 0.9);
     color: #ffffff;
-    margin-top: auto; /* Push button to use remaining space */
 }
 
+/* Never lifts on hover (the base .google-signin-button:hover does) */
 .signout-button:hover {
-    background: rgba(220, 38, 38, 1);
+    transform: none;
+}
+
+/* Bright tinted glass button variants — same recipe as
+   .hero-button-primary (translucent color gradient, matching border
+   and glow), tinted per color. Use: <button className="btn-red"> */
+.btn-green {
+    background: linear-gradient(
+        135deg,
+        rgba(94, 148, 50, 0.7) 0%,
+        rgba(76, 118, 40, 0.8) 100%
+    );
+    border: 1.5px solid rgba(94, 148, 50, 0.5);
+    box-shadow:
+        0 4px 16px rgba(94, 148, 50, 0.3),
+        0 1px 4px rgba(0, 0, 0, 0.2),
+        inset 0 1px rgba(255, 255, 255, 0.2),
+        inset 0 -1px rgba(0, 0, 0, 0.2);
+}
+
+.btn-red {
+    background: linear-gradient(
+        135deg,
+        rgba(220, 38, 38, 0.7) 0%,
+        rgba(153, 27, 27, 0.8) 100%
+    );
+    border: 1.5px solid rgba(220, 38, 38, 0.5);
+    box-shadow:
+        0 4px 16px rgba(220, 38, 38, 0.3),
+        0 1px 4px rgba(0, 0, 0, 0.2),
+        inset 0 1px rgba(255, 255, 255, 0.2),
+        inset 0 -1px rgba(0, 0, 0, 0.2);
+}
+
+.btn-blue {
+    background: linear-gradient(
+        135deg,
+        rgba(37, 99, 235, 0.7) 0%,
+        rgba(29, 78, 216, 0.8) 100%
+    );
+    border: 1.5px solid rgba(37, 99, 235, 0.5);
+    box-shadow:
+        0 4px 16px rgba(37, 99, 235, 0.3),
+        0 1px 4px rgba(0, 0, 0, 0.2),
+        inset 0 1px rgba(255, 255, 255, 0.2),
+        inset 0 -1px rgba(0, 0, 0, 0.2);
+}
+
+.btn-green:hover,
+.btn-red:hover,
+.btn-blue:hover {
+    /* Natural light: a specular sheen follows the cursor (--mx/--my set
+       by header.tsx), plus a mild brightness lift — not a flat wash */
+    filter: brightness(1.08);
+}
+
+.btn-green,
+.btn-red,
+.btn-blue {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-green::after,
+.btn-red::after,
+.btn-blue::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+        120px circle at var(--mx, 50%) var(--my, 30%),
+        rgba(255, 255, 255, 0.28),
+        rgba(255, 255, 255, 0.08) 45%,
+        rgba(255, 255, 255, 0) 65%
+    );
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.btn-green:hover::after,
+.btn-red:hover::after,
+.btn-blue:hover::after {
+    opacity: 1;
+}
+
+/* Shadcn-style card footer: hairline top edge, subtle muted tint,
+   spans the popup edge-to-edge below the content. */
+.login-expanded-footer {
+    margin: 1rem -1.5rem -1.5rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0 0 20px 20px;
 }
 
 .profile-header {
@@ -1733,8 +1887,7 @@ body {
     align-items: center;
     text-align: center;
     margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    /* Divider replaced by the shadcn-style footer below the content */
 }
 
 .profile-picture-large {
@@ -2593,6 +2746,227 @@ body {
     color: #4e8d1f !important;
 }
 
+/* Mobile bar inner content — styled for the mobile look at EVERY width
+   (the bar is invisible on desktop, so styling it there too means the
+   breakpoint flip has nothing to restyle — no desktop-text flash). */
+/* All inner-content rules below are scoped to the mobile bar ONLY —
+   the desktop pill keeps its desktop item layout at every width, so
+   its exit fade can never show mobile-styled content. */
+.navbar-mobile .navbar-content {
+    width: 100%;
+    height: auto !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.navbar-mobile .navbar-links {
+    width: 100%;
+    max-width: none !important;
+    justify-content: space-between;
+    gap: 0;
+    padding: 0 !important;
+
+    opacity: 1 !important;
+    pointer-events: all !important;
+    transform: none !important;
+    display: flex;
+    overflow: visible;
+    margin: 0 !important;
+    flex: 1 !important;
+    align-items: center;
+}
+
+.navbar-mobile .navbar-dropdown {
+    height: auto !important;
+    min-height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Nav Items - Equal Distribution & Animation */
+.navbar-mobile a.navbar-item,
+.navbar-mobile .navbar-dropdown {
+    flex: 1 1 0px !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+
+    display: flex !important;
+    justify-content: center;
+    align-items: center !important;
+
+    max-width: 200px !important;
+    opacity: 1 !important;
+
+    transition:
+        flex 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+        flex-grow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+        max-width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+        opacity 0.3s ease-in-out,
+        background-color 0.3s ease-in-out !important;
+
+    overflow: hidden;
+}
+
+.navbar-mobile .navbar-dropdown > .navbar-dropdown-trigger {
+    width: 100% !important;
+    height: 100% !important;
+    padding: 8px 0 !important;
+    transition: padding 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+.navbar-mobile a.navbar-item {
+    padding: 8px 0 !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+
+/* Hidden State (focus mode) */
+.navbar-mobile .navbar-item-hidden,
+.navbar-mobile .navbar-dropdown.navbar-item-hidden {
+    flex: 0.0001 1 0px !important;
+    max-width: 0px !important;
+    opacity: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    pointer-events: none;
+}
+
+/* Active State */
+.navbar-mobile .navbar-dropdown-active {
+    flex: 10 1 0px !important;
+    max-width: 100% !important;
+    opacity: 1 !important;
+}
+
+.navbar-mobile .navbar-dropdown-active .navbar-dropdown-trigger {
+    background: rgba(255, 255, 255, 0.15) !important;
+    gap: 4px !important;
+
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+.navbar-mobile .navbar-dropdown-active .navbar-dropdown-trigger span span {
+    font-size: 13px !important;
+    font-weight: 700;
+    color: #ffffff;
+    transition: all 0.3s ease;
+}
+
+.navbar-mobile .navbar-dropdown-active .navbar-dropdown-trigger svg {
+    opacity: 1;
+    width: 22px !important;
+    height: 22px !important;
+}
+
+/* Nav Item Contents */
+.navbar-mobile a.navbar-item,
+.navbar-mobile .navbar-dropdown-trigger {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 60px !important;
+    padding: 8px 0 !important;
+    margin: 0 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border-radius: 16px;
+    gap: 4px !important;
+
+    background: transparent;
+}
+
+.navbar-mobile a.navbar-item:hover,
+.navbar-mobile .navbar-dropdown-trigger:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 0 !important;
+}
+
+.navbar-mobile .navbar-item > span,
+.navbar-mobile .navbar-dropdown-trigger > span,
+.navbar-mobile .navbar-links a > span {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 5px !important;
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+}
+
+.navbar-mobile .navbar-item svg,
+.navbar-mobile .navbar-dropdown-trigger svg {
+    width: 22px !important;
+    height: 22px !important;
+    margin: 0;
+}
+
+.navbar-mobile .navbar-item span span,
+.navbar-mobile .navbar-dropdown-trigger span span {
+    font-size: 11px !important;
+    font-weight: 600;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.navbar-mobile .navbar-dropdown-trigger .lucide-chevron-down {
+    display: none;
+}
+
+/* Hover/Active interactions */
+.navbar-mobile .navbar-item:hover,
+.navbar-mobile .navbar-dropdown-trigger:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 0 !important;
+}
+
+/* Focus/press must never draw anything OUTSIDE the tile — the UA focus
+   ring sits outside the box, which made the button look like it grew when
+   pressed or focused. Keyboard focus gets an inset ring instead. */
+.navbar-mobile .navbar-item,
+.navbar-mobile .navbar-dropdown-trigger {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.navbar-mobile .navbar-item:focus,
+.navbar-mobile .navbar-dropdown-trigger:focus {
+    outline: none;
+}
+
+.navbar-mobile .navbar-item:focus-visible,
+.navbar-mobile .navbar-dropdown-trigger:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.55);
+    outline-offset: -2px;
+    border-radius: 16px;
+}
+
+.navbar-mobile .navbar-dropdown-active .navbar-dropdown-trigger {
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.navbar-mobile .navbar-dropdown-active .navbar-dropdown-trigger span span {
+    color: #fff;
+    opacity: 1;
+}
+
+/* Corner-pill morph across the 1200px breakpoint is done in
+   header.tsx (computed FLIP + WAAPI) — View Transitions get skipped by
+   the browser on window resize, the exact moment this needs to run.
+   Only the wrapper's scroll-reveal transition is suppressed here so it
+   doesn't ride the layout swap. */
+.nav-morphing .header-wrapper {
+    transition: none !important;
+}
+
 /* Responsive Navbar Modifications for < 1200px */
 @media (max-width: 1200px) {
     /* Header Wrapper */
@@ -2611,12 +2985,14 @@ body {
         pointer-events: auto;
     }
     
-    /* Top Elements - Logo (Left) and Login (Right) */
+    /* Top Elements - Logo (Left) and Login (Right).
+       On the desktop->mobile layout swap these fade/settle into their
+       fixed corners via the base transitions (no entry animations here —
+       the swap-phase overrides in header.tsx choreograph the handoff). */
     .logo-container {
         position: fixed;
         top: 1rem;
         left: 1rem;
-        transform: none !important;
         margin: 0 !important;
         transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
     }
@@ -2625,228 +3001,74 @@ body {
         position: fixed;
         top: 1rem;
         right: 1rem;
-        transform: none !important;
         margin: 0 !important;
         transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
     }
 
-    /* Navbar - Android-style Bottom Navigation */
+    /* Desktop pill is replaced by the bottom bar below 1200px: it stays
+       centered and simply slides up out (entering slides back down).
+       Visibility flips only after the slide. */
     .navbar {
+        margin: 0 auto;
+        opacity: 0;
+        transform: translateY(-120%);
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+            opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            visibility 0s linear 0.3s;
+    }
+    /* Navbar - Android-style Bottom Navigation (separate element).
+       Rises from the bottom 0.25s after the flip so the desktop pill's
+       exit leads; visibility flips immediately. */
+    .navbar-mobile {
         position: fixed;
         bottom: 1rem;
-        top: auto;
         left: 1rem;
         right: 1rem;
-        width: auto;
-        transform: none !important;
-        
-        border-radius: 24px;
         z-index: 60;
-        height: auto !important;
         padding: 6px;
-        
+        border-radius: 24px;
+
+        /* Glass pill visuals (owned here since the base .navbar styles
+           are desktop-only) */
+        background: rgba(28, 28, 28, 0.35);
+        -webkit-backdrop-filter: blur(60px) saturate(200%) brightness(1.1);
+        backdrop-filter: blur(60px) saturate(200%) brightness(1.1);
+        border: 1.5px solid rgba(255, 255, 255, 0.25);
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.5),
+            0 2px 8px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+
         display: flex;
         justify-content: center;
         align-items: center;
-        
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
+
+        opacity: 1;
+        transform: translateY(0);
+        visibility: visible;
+        pointer-events: all;
+
+        /* Entering (desktop->mobile): rise shortly after the flip so the
+           desktop pill's exit leads; visibility flips immediately. */
+        transition:
+            transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s,
+            opacity 0.25s ease-in-out 0.1s,
+            visibility 0s;
     }
 
-    .navbar::before {
+    .navbar-mobile::before {
         border-radius: 24px !important;
     }
-    
-    .navbar-content {
-        width: 100%;
-        height: auto !important;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
 
-    .navbar-links {
-        width: 100%;
-        max-width: none !important;
-        justify-content: space-between;
-        gap: 0;
-        padding: 0 !important;
-        
-        opacity: 1 !important;
-        pointer-events: all !important;
-        transform: none !important;
-        display: flex;
-        overflow: visible;
-        margin: 0 !important;
-        flex: 1 !important;
-        align-items: center;
-    }
-
-    .navbar-trigger {
-        display: none !important;
-    }
-    
-    .navbar-dropdown {
-        height: auto !important;
-        min-height: 100% !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-
-    /* Nav Items - Equal Distribution & Animation */
-    a.navbar-item,
-    .navbar-dropdown {
-        flex: 1 1 0px !important;
-        width: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        height: auto !important;
-        
-        display: flex !important;
-        justify-content: center;
-        align-items: center !important;
-        
-        max-width: 200px !important; 
-        opacity: 1 !important;
-        
-        transition: 
-            flex 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
-            flex-grow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
-            max-width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
-            opacity 0.3s ease-in-out,
-            background-color 0.3s ease-in-out !important;
-            
-        overflow: hidden;
-    }
-    
-    .navbar-dropdown > .navbar-dropdown-trigger {
-        width: 100% !important;
-        height: 100% !important;
-        padding: 8px 0 !important;
-        transition: padding 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
-    }
-    
-    a.navbar-item {
-        padding: 8px 0 !important;
-        flex-direction: column !important;
-        gap: 4px !important;
-    }
-
-    /* Hidden State */
-    .header-wrapper .navbar-links > .navbar-item-hidden,
-    .navbar-dropdown.navbar-item-hidden {
-        flex: 0.0001 1 0px !important;
-        max-width: 0px !important;
-        opacity: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        pointer-events: none;
-    }
-
-    /* Active State */
-    .navbar-dropdown-active {
-        flex: 10 1 0px !important;
-        max-width: 100% !important;
-        opacity: 1 !important;
-    }
-
-    .navbar-dropdown-active .navbar-dropdown-trigger {
-        background: rgba(255, 255, 255, 0.15) !important;
-        gap: 4px !important; 
-        
-        box-shadow:
-            0 4px 12px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
-    }
-
-    .navbar-dropdown-active .navbar-dropdown-trigger span span {
-        font-size: 13px !important; 
-        font-weight: 700;
-        color: #ffffff;
-        transition: all 0.3s ease;
-    }
-    
-    .navbar-dropdown-active .navbar-dropdown-trigger svg {
-        opacity: 1;
-        width: 22px !important;
-        height: 22px !important;
-    }
-
-    /* Nav Item Contents */
-    a.navbar-item,
-    .navbar-dropdown-trigger {
-        width: 100% !important;
-        height: auto !important;
-        min-height: 60px !important;
-        padding: 8px 0 !important;
-        margin: 0 !important;
-        
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: center !important;
-        border-radius: 16px;
-        gap: 4px !important;
-        
-        background: transparent;
-    }
-
-    a.navbar-item:hover,
-    .navbar-dropdown-trigger:hover {
-        transform: none;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 8px 0 !important;
-    }
-
-    .navbar-item > span,
-    .navbar-dropdown-trigger > span,
-    .navbar-links a > span {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        gap: 5px !important;
-        width: 100%;
-        justify-content: center;
-        text-align: center;
-    }
-
-    .navbar-item svg,
-    .navbar-dropdown-trigger svg {
-        width: 22px !important;
-        height: 22px !important;
-        margin: 0;
-    }
-
-    .navbar-item span span,
-    .navbar-dropdown-trigger span span {
-        font-size: 11px !important;
-        font-weight: 600;
-        line-height: 1;
-        opacity: 0.8;
-    }
-    
-    .navbar-dropdown-trigger .lucide-chevron-down {
-        display: none;
-    }
-
-    /* Hover/Active interactions */
-    .navbar-item:hover,
-    .navbar-dropdown-trigger:hover {
-        transform: none;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 8px 4px !important;
-    }
-    
-    .navbar-dropdown-active .navbar-dropdown-trigger {
-        background: rgba(255, 255, 255, 0.15) !important;
-    }
-    
-    .navbar-dropdown-active .navbar-dropdown-trigger span span {
-        color: #fff;
-        opacity: 1;
-    }
-
-    /* Hide Animations */
+    /* Hide Animations. The desktop pill is never shown below 1200px —
+       not even in the scrolled state (its old override here made it
+       visible and pushed down, sweeping up through the header on
+       reveal). Corners slide up out of view; the bar hides via its own
+       class below. */
     .header-wrapper.header-hidden {
         opacity: 1 !important;
         transform: none !important;
@@ -2857,20 +3079,13 @@ body {
         transform: translateY(-100px) !important;
         opacity: 1 !important;
     }
-    
-    .header-wrapper.header-hidden .navbar {
+
+    /* Mobile bar scroll-hide lives on the bar itself (it renders outside
+       the wrapper, so it keys off its own visibility class). */
+    .navbar-mobile.bar-hidden {
         transform: translateY(150%) !important;
         opacity: 1 !important;
-    }
-
-    .header-wrapper.header-visible .navbar {
-        transform: translateY(0) !important;
-        opacity: 1;
-    }
-
-    .header-wrapper.header-visible .logo-container,
-    .header-wrapper.header-visible .login-container {
-        opacity: 1;
+        pointer-events: none !important;
     }
 
     /* Mobile Dropdown Menu */
@@ -2922,29 +3137,45 @@ body {
         overflow: visible !important;
     }
 
-    .navbar.navbar-compressed .navbar-links {
-        opacity: 1 !important;
-        max-width: none !important;
-        transform: none !important;
-        visibility: visible !important;
-        pointer-events: all !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        flex: 1 !important;
-    }
-
-    .navbar.navbar-compressed .navbar-trigger {
-        display: none !important;
-    }
-
-    /* Login Popup Width */
+    /* Login Popup Width (right/top are set inline from the pill) */
     .login-expanded {
         width: calc(100vw - 2rem) !important;
         max-width: 360px !important;
-        right: 0 !important;
     }
 }
+
+/* Desktop entrance: when crossing mobile -> desktop the pill drops in
+   from above while the mobile bar slides down out of view (its hidden
+   state below). Corner pills settle via header-corner-in. */
+@media (min-width: 1201px) {
+    /* Mobile bar off state: slides down and out, then unmounts from
+       the accessibility tree (visibility flips after the slide).
+       position: fixed keeps it out of the header-wrapper flex flow —
+       otherwise its width would push the desktop pill off-center. */
+    .navbar-mobile {
+        position: fixed;
+        bottom: 1rem;
+        left: 1rem;
+        right: 1rem;
+        opacity: 0;
+        transform: translateY(150%);
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+            transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.25s ease-in-out,
+            visibility 0s linear 0.3s;
+    }
+
+    /* No corner-p fade keyframes here: header.tsx FLIP-morphs the corner
+       pills from their mobile positions to these desktop spots at the
+       layout swap, and the navbar pill drops in via its base transition
+       from the mobile-hidden state. */
+}
+
+/* Corner pills do NOT fade during the mobile->desktop swap — header.tsx
+   FLIP-morphs them from their mobile corner positions to their desktop
+   spots, so no fade keyframes here. */
 
 @keyframes dropdownSlideUp {
     from {
@@ -2956,3 +3187,547 @@ body {
         transform: translateY(0) scale(1);
     }
 }
+
+/* === Foldable / dual-screen devices ============================
+   Docs:
+   - MDN Viewport Segments API:
+     https://developer.mozilla.org/en-US/docs/Web/API/Viewport_segments_API
+   - MDN horizontal/vertical-viewport-segments media features
+   - Chrome 138+ ships this (window.viewport.segments)
+   - web.dev "Screen configurations" (learn/design)
+
+   Split-landscape (hinge vertical, viewport split into two side-by-side
+   segments — Surface Duo double-portrait, book-style foldables) is where
+   we do something fold-specific: the header becomes a two-page masthead
+   (brand + nav on the first page, account on the second), page chrome
+   adapts its shape to the spine, and the content flow stays full-width
+   with a transition effect at the fold. Where unsupported the media
+   feature simply doesn't match, so non-foldables are unaffected.
+   ============================================================== */
+
+/* Corner grips + the ball for the folded nav rail (revealed by the fold query). */
+.nav-grip,
+.nav-grip-bead {
+    display: none;
+}
+
+/* Resize hint: folded-only (the resize state can't happen elsewhere). */
+.navbar-resizing {
+    display: none;
+}
+
+@media (horizontal-viewport-segments: 2) and (vertical-viewport-segments: 1) {
+    :root {
+        /* Inset to the right of the first page: the hinge plus the whole
+           second page. */
+        --fold-right: calc(100vw - env(viewport-segment-right 0 0));
+
+        /* The hinge itself (right edge of segment 0 -> left edge of
+           segment 1); min 3px so the band is never zero-width. */
+        --fold-gap: max(
+            3px,
+            calc(env(viewport-segment-left 1 0) - env(viewport-segment-right 0 0))
+        );
+    }
+
+    /* --- Fold posture: identity-only masthead ---------------------
+       The header becomes two halves that belong to their own screen,
+       with the hinge as the gutter between them:
+
+         page 0 (left screen)          page 1 (right screen)
+         [brand] ................... | [account]
+
+       Brand sits on the first page's outer margin and the account on the
+       second page's outer corner. Primary navigation is NOT up here — it
+       lives in the one-hand dock below, inside a thumb arc. */
+    .header-wrapper {
+        left: 0;
+        width: 100%;
+        transform: none !important;
+        display: grid;
+        grid-template-columns:
+            env(viewport-segment-width 0 0)
+            env(viewport-segment-width 1 0);
+        column-gap: var(--fold-gap);
+        align-items: center;
+    }
+
+    .logo-container {
+        grid-area: 1 / 1;
+        justify-self: start;
+        margin-left: 1rem;
+    }
+
+    /* The desktop links pill is redundant in this posture: the one-hand
+       dock below carries the navigation. */
+    .navbar {
+        display: none;
+    }
+
+    .login-container {
+        grid-area: 1 / 2;
+        justify-self: end;
+        margin-right: 1rem;
+    }
+
+    /* Modals centre inside the left segment too. */
+    .modal-overlay {
+        padding-right: var(--fold-right);
+    }
+}
+
+/* === One-hand nav rail (folded) ================================
+   In the segmented (folded) posture the primary nav becomes a vertical
+   rail hugging one outer edge, anchored at the bottom (thumb zone) so
+   the whole stack sits inside a one-handed arc. Splitting it across the
+   hinge — or letting it span the width — strands half the items outside
+   that arc, and the middle of the device is behind the physical hinge.
+
+   Swiping the rail sideways moves it to the other edge (no extra
+   button), whichever hand holds the device; the choice persists in
+   localStorage as html[data-dock="left"|"right"].
+
+   This block is last in the file so it also beats the >1200px "parked
+   below the screen" state of the bar.
+   ============================================================== */
+@media (horizontal-viewport-segments: 2) and (vertical-viewport-segments: 1) {
+    .navbar-mobile {
+        position: fixed;
+        bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+        /* Anchored at the left edge and positioned with a transform, so
+           the side switch is animatable (swapping left/right is not).
+           translateX % is the rail's own width. */
+        left: 0;
+        right: auto;
+        top: auto;
+        /* fixed width, not auto: `auto` can't be transitioned, so the
+           expand would snap. 155px = 2 tiles (136) + gap (4) + padding
+           (12) + border (3) — exactly the closed pad's natural size.
+           `--rail-w` mirrors it so children (the grip) can position
+           against the rail's edge and animate with it. */
+        --rail-w: 155px;
+        width: var(--rail-w);
+        height: 155px;
+        /* lets the height animate between a fixed form size and `auto`
+           (the open panel) where supported */
+        interpolate-size: allow-keywords;
+        margin: 0;
+        /* equal inset on all four sides → square container */
+        padding: 6px;
+        border-radius: 24px;
+        background: rgba(28, 28, 28, 0.35);
+        -webkit-backdrop-filter: blur(60px) saturate(200%) brightness(1.1);
+        backdrop-filter: blur(60px) saturate(200%) brightness(1.1);
+        border: 1.5px solid rgba(255, 255, 255, 0.25);
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.5),
+            0 2px 8px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(var(--dock-x, 1rem));
+        /* free drag offset lives on `translate` (separate from
+           `transform`), so it can follow the pointer on both axes and snap
+           back without fighting the width-anchored transform */
+        translate: var(--dock-drag, 0px 0px);
+        transition:
+            width 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+            height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+            transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+            translate 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+            opacity 0.25s ease-in-out;
+        cursor: grab;
+        pointer-events: all;
+        /* the rail is a drag handle: hand the browser NO panning here, or
+           it steals the gesture (and cancels the pointer) as a scroll */
+        touch-action: none;
+    }
+
+    /* while dragging: follow the pointer exactly, no easing */
+    .navbar-mobile.dock-dragging {
+        transition: none !important;
+        cursor: grabbing;
+    }
+
+    /* while resizing from the handle: track the pointer exactly too, and
+       don't animate the grip — it just stays on the corner. The lap fires
+       only when the rail changes sides. */
+    .navbar-mobile.rail-sizing {
+        transition: none !important;
+    }
+
+    .navbar-mobile.rail-sizing .navbar-links,
+    .navbar-mobile.rail-sizing .nav-grip,
+    .navbar-mobile.rail-sizing .nav-grip-arc {
+        /* no transition, no in-flight animation: the grip just holds the
+           corner and rides the edge while resizing */
+        transition: none !important;
+        animation: none !important;
+    }
+
+    /* Resize placeholder: the tiles give way to a simple "Resizing" hint
+       while the grip is being dragged. */
+    .navbar-resizing {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .navbar-mobile.rail-sizing .navbar-resizing {
+        display: flex;
+    }
+
+    .navbar-mobile.rail-sizing .navbar-content {
+        display: none;
+    }
+
+    /* The grips are for adjusting the rail only — hidden while the panel is
+       open (and the rail stops being draggable, see header.tsx). */
+    .navbar-mobile.nav-open .nav-grip,
+    .navbar-mobile.nav-open .nav-grip-bead {
+        display: none;
+    }
+
+    /* --- Corner grips: an arc per top corner ------------------------
+       Only the inner-top corner is shown for the current dock (top-right
+       when docked left, top-left when docked right). Changing sides runs a
+       bead along the top edge, and the arcs hand over as it lands. */
+    .nav-grip {
+        display: block;
+        position: absolute;
+        top: -51px;
+        width: 150px;
+        height: 150px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .nav-grip[data-arc="left"] {
+        left: -51px;
+        /* mirror the arc AND its clipped hit area to hug the left corner */
+        transform: scaleX(-1);
+    }
+
+    .nav-grip[data-arc="right"] {
+        left: calc(var(--rail-w) - 99px);
+    }
+
+    /* the inner corner is the live one */
+    html[data-dock="left"] .nav-grip[data-arc="right"],
+    html[data-dock="right"] .nav-grip[data-arc="left"] {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* while the morph runs, the hand-over waits for the ball to land */
+    .navbar-mobile.nav-switching .nav-grip {
+        transition: opacity 0.16s ease 0.9s;
+    }
+
+    .nav-grip-arc {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        color: rgba(255, 255, 255, 0.85);
+        filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.45));
+    }
+
+    .nav-grip-hit {
+        position: absolute;
+        inset: 0;
+        /* the rail's corner sits at 66% / 34% of this box. Keep the two
+           ~51px strips outside it AND overhang ~8px inward, so grabbing the
+           arc where it sits on the border (the middle of the stroke) still
+           grabs the grip — the overhang only covers the rail's padding. */
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 61% 100%, 61% 39%, 0 39%);
+        pointer-events: auto;
+        cursor: grab;
+        touch-action: none;
+    }
+
+    .nav-grip-hit:active {
+        cursor: grabbing;
+    }
+
+    /* Changing sides: the leaving arc collapses into a ball AND fades, so
+       it hands off to the travelling ball instead of leaving a second dot
+       behind at the origin. The arriving corner's arc takes over once the
+       ball lands. */
+    .nav-grip.leaving {
+        animation: gripHandoff 0.3s ease forwards;
+    }
+
+    .nav-grip.leaving .nav-grip-arc path {
+        animation: gripMorph 0.28s ease forwards;
+    }
+
+    @keyframes gripHandoff {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+
+    /* full arc -> ball (fast, so it dissolves as the ball leaves) */
+    @keyframes gripMorph {
+        from {
+            d: path("M 51.7 34.1 A 16 16 0 0 1 65.9 48.3");
+        }
+        to {
+            d: path("M 51.7 34.1 A 16 16 0 0 1 52.2 34.2");
+        }
+    }
+
+    /* the ball that runs the top edge (position comes from header.tsx) */
+    .nav-grip-bead {
+        display: block;
+        position: absolute;
+        top: -2.5px;
+        left: calc(var(--rail-w) - 26.5px);
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .navbar-mobile::before {
+        border-radius: 24px !important;
+    }
+
+    /* Stack the items into a vertical rail. */
+    .navbar-mobile .navbar-content,
+    .navbar-mobile .navbar-links {
+        width: auto;
+    }
+
+    /* Tile grid. The base mobile rule is `display: flex`; the form factors
+       need a real grid or only the horizontal variant lays out correctly. */
+    .navbar-mobile .navbar-links {
+        display: grid;
+        grid-template-columns: repeat(2, 68px);
+        gap: 4px;
+        /* tiles slide into the new column count when the form changes */
+        transition: grid-template-columns 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    :where(html[data-rail-form="row"]) .navbar-mobile {
+        --rail-w: 299px; /* 4 x 68 + 3 gaps + 12 padding + 3 border */
+        height: 83px; /* 1 x 68 + 12 padding + 3 border */
+    }
+
+    :where(html[data-rail-form="row"]) .navbar-mobile .navbar-links {
+        grid-template-columns: repeat(4, 68px);
+    }
+
+    :where(html[data-rail-form="col"]) .navbar-mobile {
+        --rail-w: 83px; /* 1 x 68 + 12 padding + 3 border */
+        height: 299px; /* 4 x 68 + 3 gaps + 12 padding + 3 border */
+    }
+
+    :where(html[data-rail-form="col"]) .navbar-mobile .navbar-links {
+        grid-template-columns: 68px;
+    }
+
+    /* Rail items are fixed squares. The box is pinned on all four sides
+       because the base rules carry min-height: 100%/60px (which beat
+       `height`) and would otherwise make dropdown tiles taller than the
+       plain ones. ONLY the box geometry is set — the item's own design
+       (radius, background, hover/press look, icon and type sizes) is
+       untouched. */
+    .navbar-mobile a.navbar-item,
+    .navbar-mobile .navbar-dropdown {
+        flex: 0 0 auto !important;
+        width: 68px !important;
+        min-width: 68px !important;
+        max-width: 68px !important;
+        height: 68px !important;
+        min-height: 68px !important;
+        max-height: 68px !important;
+        padding: 0 !important;
+        justify-content: center !important;
+    }
+
+    /* Label stays a small caption — bold, not enlarged. */
+    .navbar-mobile .navbar-item span span,
+    .navbar-mobile .navbar-dropdown-trigger span span {
+        font-size: 10px !important;
+        font-weight: 700 !important;
+    }
+
+    /* The base rule bumps the label to 13px while the item's dropdown is
+       active (i.e. right when you press it) — keep the size fixed here so
+       pressing never enlarges the text. */
+    .navbar-mobile .navbar-dropdown-active .navbar-dropdown-trigger span span {
+        font-size: 10px !important;
+    }
+
+    .navbar-mobile .navbar-links {
+        /* grid handles the layout; keep only the gap consistent */
+        gap: 4px;
+    }
+
+    /* Pin the padding on the pressed/open state too, so the square never
+       resizes when it's highlighted (the base rule adds 8px 4px). */
+    .navbar-mobile .navbar-item:hover,
+    .navbar-mobile .navbar-dropdown-trigger:hover,
+    .navbar-mobile .navbar-dropdown-active .navbar-dropdown-trigger {
+        padding: 0 !important;
+    }
+
+    /* Flipped: glide to the right edge. translateX % is the rail's own
+       width, so this stays interpolable and animates smoothly. */
+    html[data-dock="right"] .navbar-mobile {
+        --dock-x: calc(100vw - 100% - 1rem);
+    }
+
+    /* Keep the rail's side while it's scrolled away (the base rule would
+       otherwise drop the x-offset and it would re-enter from the left). */
+    .navbar-mobile.bar-hidden {
+        transform: translateY(150%) translateX(var(--dock-x, 1rem)) !important;
+    }
+
+    /* --- One dynamic component -------------------------------------
+       Focusing a nav item does NOT move anything: the tile just highlights
+       where it sits and the container extends (rightward/downward) to
+       reveal that item's submenu below the pad. Padding stays identical to
+       the closed state so the rail doesn't jump. */
+    .navbar-mobile.nav-open {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        /* same 6px inset as the closed pad */
+        padding: 6px;
+        width: min(340px, calc(env(viewport-segment-width 0 0) - 2rem));
+        /* let the panel define the height instead of the form factor */
+        height: auto;
+        min-height: 0;
+        /* width only. The position transform depends on the element's own
+           width (it pins the dock corner), so transitioning it would lag
+           behind the width and make the box drift instead of expanding
+           outward from the dock corner. The drag `translate` is
+           independent, so it can still snap. */
+        transition:
+            width 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+            translate 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    html[data-dock="right"] .navbar-mobile.nav-open {
+        width: min(340px, calc(env(viewport-segment-width 1 0) - 2rem));
+    }
+
+    /* --- Expand / compact animation -------------------------------
+       The container's height is auto, so it follows its children frame by
+       frame: the submenu's row animates (0fr -> 1fr) and the unused tiles
+       collapse (max-height + opacity) instead of blinking out. Only the
+       tiles' max-height/opacity/background need transitions here. */
+    .navbar-mobile a.navbar-item,
+    .navbar-mobile .navbar-dropdown {
+        /* max-height only: opacity flips instantly so the unused tiles are
+           gone at once (no "About Us / Events fading out"), while their
+           row still collapses smoothly and carries the container height */
+        transition:
+            max-height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+            background-color 0.25s ease !important;
+    }
+
+    .navbar-mobile.nav-open .navbar-item,
+    .navbar-mobile.nav-open .navbar-dropdown:not(.navbar-dropdown-active) {
+        min-height: 0 !important;
+        max-height: 0 !important;
+        opacity: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+
+    .navbar-panel {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .navbar-mobile.nav-open .navbar-panel {
+        grid-template-rows: 1fr;
+    }
+
+    /* clips the submenu while its row animates */
+    .navbar-panel > * {
+        overflow: hidden;
+    }
+
+    /* submenu sits ABOVE the tile: the container is bottom-anchored, so
+       growing upward leaves the tile at the bottom of the pad, aligned to
+       the dock corner. */
+    .navbar-mobile.nav-open .navbar-panel {
+        order: 1;
+        width: 100%;
+    }
+
+    .navbar-mobile.nav-open .navbar-content {
+        order: 2;
+        width: 100%;
+    }
+
+    /* the lone tile drops to the bottom, hugging the dock side. One
+       column only — with two, the tile would sit in the left track and
+       stop 68px short of the corner. `gap: 0` because the collapsed rows
+       still contribute the gap otherwise (3 x 4px of dead space). */
+    .navbar-mobile.nav-open .navbar-links {
+        width: 100%;
+        grid-template-columns: 68px;
+        justify-content: start;
+        gap: 0;
+    }
+
+    html[data-dock="right"] .navbar-mobile.nav-open .navbar-links {
+        justify-content: end;
+    }
+
+    .navbar-panel .navbar-dropdown-menu {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-height: none;
+        padding: 0 0 8px;
+        box-shadow: none;
+        animation: navPanelIn 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) 0.06s both;
+    }
+
+    /* No card of its own: the menu's gradient backdrop would read as a
+       background panel behind the group, but it already sits in the nav
+       rail's glass. */
+    .navbar-panel .navbar-dropdown-menu::before {
+        display: none;
+    }
+}
+
+@keyframes navPanelIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Split-portrait (hinge horizontal, top/bottom segments) needs no
+   overrides: the header sits in the top segment, the bottom bar in the
+   bottom one, and no centre-anchored chrome crosses the hinge. */

@@ -106,7 +106,7 @@ async function getGoogleAccessToken() {
     throw new Error(`Google OAuth failed: ${res.status} ${res.statusText}`);
   }
 
-  const data = await res.json();
+  const data = (await res.json()) as { access_token?: string };
   if (!data.access_token) {
     console.error('No access token in response:', data);
     throw new Error('Failed to get Google access token');
@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const metadata = await metadataRes.json();
+    const metadata = (await metadataRes.json()) as { name?: string };
     filename = metadata.name || `ACCESS_Resource_${encodedFileId}_${downloadDate.toLocaleString('sv')}.pdf`;
 
     // Cache the file

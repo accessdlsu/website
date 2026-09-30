@@ -2,7 +2,7 @@ import PageHeader from "@/components/ui/page-header";
 import Placeholder from "@/components/ui/placeholder";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getDB } from "@/lib/db";
 
 export default async function MemberManagementPage() {
   const session = await auth();
@@ -11,8 +11,7 @@ export default async function MemberManagementPage() {
     redirect("/");
   }
 
-  const { env } = await getCloudflareContext();
-  const { DB } = env;
+  const DB = await getDB();
 
   // Check if the user is an officer
   const result = await DB.prepare(

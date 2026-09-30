@@ -27,7 +27,7 @@ export default function LinkShortenerClient() {
     try {
       const res = await fetch('/api/link-shortener');
       if (!res.ok) throw new Error('Failed to fetch links');
-      const data = await res.json();
+      const data = (await res.json()) as { links?: LinkItem[] };
       setLinks(data.links || []);
     } catch (err) {
       const e = err as Error | { message?: string } | undefined;
@@ -36,7 +36,9 @@ export default function LinkShortenerClient() {
   }
 
   useEffect(() => {
-    fetchLinks();
+    void (async () => {
+      await fetchLinks();
+    })();
   }, []);
 
   async function handleCreate(e: React.FormEvent) {
@@ -51,7 +53,7 @@ export default function LinkShortenerClient() {
         body: JSON.stringify({ target_url: url, slug: alias || undefined, expires_at: expiresAt || null })
       });
 
-      const body = await res.json();
+      const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body?.error || 'Failed to create link');
 
       setUrl('');

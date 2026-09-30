@@ -1,6 +1,6 @@
-export { auth as middleware } from "@/lib/auth";
+export { auth as proxy } from "@/lib/auth";
 
-// Configure which routes the middleware should run on
+// Configure which routes the proxy should run on
 export const config = {
   matcher: [
     /*

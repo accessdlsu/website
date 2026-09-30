@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDB } from '@/lib/db';
 
 export async function GET() {
   try {
@@ -10,8 +10,7 @@ export async function GET() {
       return NextResponse.json({ isOfficer: false }, { status: 401 });
     }
 
-    const { env } = await getCloudflareContext();
-    const { DB } = env;
+    const DB = await getDB();
 
     // Check if the user is an officer
     const result = await DB.prepare(

@@ -93,7 +93,7 @@ async function getGoogleAccessToken() {
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as { access_token?: string };
   if (!data.access_token) throw new Error('Failed to get Google access token');
   return data.access_token;
 }
@@ -133,11 +133,11 @@ export async function GET() {
       },
     });
 
-    const data = await res.json();
-    
+    const data = (await res.json()) as { files?: Array<{ id: string; [key: string]: unknown }> };
+
     if (Array.isArray(data.files)) {
       // Encode file IDs for security
-      data.files = data.files.map((file: { id: string }) => ({
+      data.files = data.files.map((file) => ({
         ...file,
         id: typeof file.id === 'string' ? btoa(file.id) : file.id,
       }));

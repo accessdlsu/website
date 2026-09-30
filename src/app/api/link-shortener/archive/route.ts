@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDB } from '@/lib/db';
 
 export async function POST() {
   try {
-    const { env } = await getCloudflareContext();
-    const { DB } = env;
+    const DB = await getDB();
 
     // Archive expired links (expires_at <= now) and not already archived
     const nowIso = new Date().toISOString();
@@ -12,7 +11,7 @@ export async function POST() {
       .bind(nowIso)
       .run();
 
-    return NextResponse.json({ success: true, changes: result.changes ?? null });
+    return NextResponse.json({ success: true, changes: result.meta.changes ?? null });
   } catch (error) {
     console.error('Error archiving expired links:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

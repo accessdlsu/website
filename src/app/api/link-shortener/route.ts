@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDB } from '@/lib/db';
 import { auth } from '@/lib/auth';
 
 type CreateBody = {
@@ -8,10 +8,13 @@ type CreateBody = {
 	expires_at?: string | null; // ISO datetime string
 };
 
+type DeleteBody = {
+	id?: number;
+};
+
 export async function GET() {
 	try {
-		const { env } = await getCloudflareContext();
-		const { DB } = env;
+		const DB = await getDB();
 
 		// only return non-archived links
 		const rows = await DB.prepare('SELECT id, slug, target_url, clicks, created_at, created_by, expires_at FROM links WHERE archived = 0 ORDER BY created_at DESC').all();
@@ -43,8 +46,7 @@ export async function POST(req: Request) {
 			slug = Math.random().toString(36).slice(2, 8);
 		}
 
-		const { env } = await getCloudflareContext();
-		const { DB } = env;
+		const DB = await getDB();
 
 		// ensure uniqueness: try insert and catch constraint violation
 		try {
@@ -52,7 +54,7 @@ export async function POST(req: Request) {
 				.bind(slug, body.target_url, session.user.email, body.expires_at || null)
 				.run();
 
-			return NextResponse.json({ id: insert.lastRowId, slug, target_url: body.target_url });
+			return NextResponse.json({ id: insert.meta.last_row_id, slug, target_url: body.target_url });
 		} catch (err) {
 			// If slug already exists, return 409
 			console.error('Insert error:', err);
@@ -67,12 +69,11 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
 	try {
-		const body = await req.json();
+		const body = (await req.json()) as DeleteBody;
 		const id = body?.id;
 		if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
-		const { env } = await getCloudflareContext();
-		const { DB } = env;
+		const DB = await getDB();
 
 		await DB.prepare('DELETE FROM links WHERE id = ?').bind(id).run();
 		return NextResponse.json({ success: true });
@@ -81,4 +82,3 @@ export async function DELETE(req: Request) {
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 	}
 }
-

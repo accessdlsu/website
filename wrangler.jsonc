@@ -30,7 +30,14 @@
 			"vars": {
 				"AUTH_URL": "https://staging.accessdlsu.com",
 				"AUTH_TRUST_HOST": "true"
-			}
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "access_dlsu_db_staging",
+					"database_id": "46162b90-4b4e-4222-b2af-6c72af2fbf84"
+				}
+			]
 		}
 	},
 	"d1_databases": [

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDB } from '@/lib/db';
 
 export async function GET() {
   try {
-    const { env } = await getCloudflareContext();
-    const { DB } = env;
+    const DB = await getDB();
 
     // Schema info
     const schema = await DB.prepare("PRAGMA table_info('links')").all();
