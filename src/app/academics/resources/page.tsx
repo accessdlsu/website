@@ -52,6 +52,7 @@ interface CourseGroup {
 
 const CURRENT_ACADEMIC_YEAR_TAG = '26-27';
 const PREVIOUS_ACADEMIC_YEAR_TAG = '25-26';
+const OLDER_ACADEMIC_YEAR_TAG = '24-25';
 const FILE_FORMAT_REGEX = /^([^_]+)_(\d{2})-(\d{2})-T(\d)(?:_|$)/;
 
 export default function ResourcesPage() {
@@ -316,6 +317,10 @@ export default function ResourcesPage() {
   );
   const groupedReviewersThisYear = groupByCourse(reviewerFilesThisYear);
   const groupedReviewersPreviousYears = groupByCourse(reviewerFilesPreviousYears);
+  const reviewerFilesOtherYears = filteredFiles.filter(
+    (file) => file.category === 'notes' && !isCurrentAcademicYear(file.name) && !isPreviousAcademicYear(file.name),
+  );
+  const groupedReviewersOtherYears = groupByCourse(reviewerFilesOtherYears);
 
   function renderCourseGrid(groupedData: Map<string, CourseGroup>) {
     return (
@@ -491,6 +496,22 @@ export default function ResourcesPage() {
                   renderCourseGrid(groupedReviewersPreviousYears)
                 ) : (
                   <EmptyState message="No reviewer files found for previous academic years." />
+                )}
+              </section>
+
+              <section>
+                <div className="mb-4">
+                  <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'var(--font-poppins)' }}>
+                    Older Academic Years
+                  </h2>
+                  <p className="text-sm text-zinc-700 dark:text-zinc-400" style={{ fontFamily: 'var(--font-manrope)' }}>
+                    Reviewer files from earlier academic years (for example, {formatAcademicYearTag(OLDER_ACADEMIC_YEAR_TAG)}).
+                  </p>
+                </div>
+                {groupedReviewersOtherYears.size > 0 ? (
+                  renderCourseGrid(groupedReviewersOtherYears)
+                ) : (
+                  <EmptyState message="No reviewer files found for older academic years." />
                 )}
               </section>
 

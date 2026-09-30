@@ -124,91 +124,93 @@ body {
     pointer-events: auto;
 }
 
-.header-wrapper.header-hidden {
-    transform: translateX(-50%) translateY(-200px);
-    opacity: 0;
-    pointer-events: none;
-}
+@media (prefers-color-scheme: light) {
+    /* Use light glass surfaces (white/translucent) instead of brand-green backgrounds */
+    .glass-card,
+    .glass-card-3d,
+    .course-card,
+    .auth-warning-container,
+    .modal-panel,
+    .login-expanded-content {
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.9) 0%,
+            rgba(248, 250, 252, 0.9) 100%
+        ) !important;
+        border-color: rgba(203, 213, 225, 0.8) !important;
+        box-shadow:
+            0 12px 34px rgba(15, 23, 42, 0.08),
+            0 3px 10px rgba(15, 23, 42, 0.04),
+            inset 0 1px rgba(255, 255, 255, 0.85),
+            inset 0 -1px rgba(203, 213, 225, 0.06);
+        color: #0f172a; /* ensure text inside cards is dark */
+    }
 
-/* Helper to collapse width when hidden to avoid gaps */
-.logo-container.header-hidden,
-.login-container.header-hidden {
-    width: 0 !important;
-    margin: 0 !important;
-    opacity: 0;
-    pointer-events: none;
-    overflow: hidden;
-}
+    .glass-card:hover,
+    .glass-card-3d:hover,
+    .course-card:hover,
+    .auth-warning-container:hover,
+    .modal-panel:hover {
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(243, 244, 246, 0.95) 100%
+        ) !important;
+        border-color: rgba(203, 213, 225, 0.9) !important;
+    }
 
-    /* Unified Navbar container styles */
-    .navbar {
-        /* Floor at the compressed pill width so expanding starts from the
-           compressed size instead of collapsing to zero first (the trigger
-           is position:absolute and does not size the pill). */
-        min-width: 180px;
-        --tfc-dark-mode-text-primary: #e4e4e7;
-    --tfc-dark-mode-text-secondary: #71717a;
-    --tfc-dark-mode-bg-primary: #27272a;
-    --tfc-dark-mode-bg-primary-2: #3f3f46;
-    --tfc-dark-mode-bg-secondary: #52525b;
-    --tfc-sidebar-width: 288px;
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-    /* Removed fixed positioning as it's now in wrapper */
-    position: relative;
-    top: auto;
-    left: auto;
-    transform: none; 
-    
-    width: auto;
-    white-space: nowrap;
-    height: 60px;
-    z-index: 10;
-    background: rgba(28, 28, 28, 0.35); /* More transparent like dropdown */
-    border-radius: 50px;
-    /* dropdown menus render outside the navbar; children clip themselves,
-       and vertical visibility keeps the glass drop-shadows uncut */
-    overflow: visible;
-    opacity: 1;
-    pointer-events: all;
-    /* Desktop->mobile flip: the pill slides up and out (the mobile bottom
-       bar owns the bottom position below 1200px). Visibility flips only
-       after the slide here (hide side); showing flips immediately. */
-    transition:
-        opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        visibility 0s,
-        /* Focus mode eases the 180px floor away/instead of snapping it
-           (content width itself follows the animated items per frame) */
-        min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: all;
-    -webkit-backdrop-filter: blur(60px) saturate(200%) brightness(1.1); /* Match dropdown blur */
-    backdrop-filter: blur(60px) saturate(200%) brightness(1.1); /* Match dropdown blur */
-    border: 1.5px solid rgba(255, 255, 255, 0.25); /* Enhanced border like dropdown */
-    cursor: default; /* Changed from pointer since it's not a button anymore */
-    color: #d9d9d9;
-    font-family: var(--font-manrope), Manrope, Arial, Helvetica, sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 100%;
-    letter-spacing: -0.16px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-    /* 3D effect - multiple layered shadows */
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.5),
-        0 2px 8px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-}
+    .glass-card h1,
+    .glass-card h2,
+    .glass-card h3,
+    .glass-card h4,
+    .glass-card h5,
+    .glass-card h6,
+    .glass-card p,
+    .glass-card span,
+    .glass-card label,
+    .glass-card small,
+    .glass-card-3d h1,
+    .glass-card-3d h2,
+    .glass-card-3d h3,
+    .glass-card-3d h4,
+    .glass-card-3d h5,
+    .glass-card-3d h6,
+    .glass-card-3d p,
+    .glass-card-3d span,
+    .glass-card-3d label,
+    .glass-card-3d small,
+    .course-card h1,
+    .course-card h2,
+    .course-card h3,
+    .course-card h4,
+    .course-card h5,
+    .course-card h6,
+    .course-card p,
+    .course-card span,
+    .course-card label,
+    .course-card small,
+    .auth-warning-container h1,
+    .auth-warning-container h2,
+    .auth-warning-container h3,
+    .auth-warning-container h4,
+    .auth-warning-container h5,
+    .auth-warning-container h6,
+    .auth-warning-container p,
+    .auth-warning-container span,
+    .auth-warning-container label,
+    .auth-warning-container small {
+        color: #0f172a !important;
+        text-shadow: none !important;
+    }
 
-/* min-width floor lives on the base .navbar (see above) so the pill never
-   collapses to zero between states. */
-
-/* Add a subtle inner backdrop for extra 3D effect */
-.navbar::before {
-    content: "";
+    .glass-card svg,
+    .glass-card-3d svg,
+    .course-card svg,
+    .auth-warning-container svg,
+    .modal-panel svg,
+    .login-expanded-content svg {
+        color: #0f172a !important;
+    }
     position: absolute;
     inset: 0;
     border-radius: 50px;
